@@ -52,7 +52,38 @@ conn.commit()
 t6=cursor.fetchall()
 Top_user=pd.DataFrame(t6,columns=["state","year","quarter","pincode","registeredUser"])
 
+# Create a dictionary to map old state names to new names (union territories)
+state_mapping = {
+    "Delhi": "Delhi (UT)",
+    "Andaman & Nicobar": "Andaman and Nicobar Islands (UT)",
+    "Chandigarh": "Chandigarh (UT)",
+    "Dadra and Nagar Haveli and Daman and Diu": "Dadra and Nagar Haveli and Daman and Diu (UT)",
+    "Dadra & Nagar Haveli & Daman & Diu": "Dadra and Nagar Haveli and Daman and Diu (UT)",
+    "Jammu & Kashmir": "Jammu and Kashmir (UT)",
+    "Ladakh": "Ladakh (UT)",
+    "Lakshadweep": "Lakshadweep (UT)",
+    "Puducherry": "Puducherry (UT)"
+}
+
+# Replace state names with new names (union territories) in the data frames
+agg_trans["state"].replace(state_mapping, inplace=True)
+agg_user["state"].replace(state_mapping, inplace=True)
+map_trans["state"].replace(state_mapping, inplace=True)
+Map_user["state"].replace(state_mapping, inplace=True)
+Top_trans["state"].replace(state_mapping, inplace=True)
+Top_user["state"].replace(state_mapping, inplace=True)
+
+
 #-----------------------------------------------------------------------------GEOVISUALIZATON---------------------------------------------------------------------------------#
+
+# Create a dictionary to map old state names to new names (union territories)
+def ut_mapping(data):   
+    # Modify the data in place to replace state names
+    for feature in data["features"]:
+        state_name = feature['properties']['ST_NM']
+        if state_name in state_mapping:
+            feature['properties']['ST_NM'] = state_mapping[state_name]
+    return data  # Return the modified data
 
 #geomap overall transaction
 def plt_overall_map_trans():
@@ -63,13 +94,13 @@ def plt_overall_map_trans():
     geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson"
     response=requests.get(geojson)
     data = response.json()
+    data=ut_mapping(data)
     sta=sorted([feature['properties']['ST_NM'] for feature in data["features"]])
     df_st=pd.DataFrame({"state":sta})
 
     mergedf=df_st.merge(at2,on='state')
 
-    fig=px.choropleth(mergedf,
-                    geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+    fig=px.choropleth(mergedf,geojson=data,
                     featureidkey='properties.ST_NM',locations='state',color='transaction_count',color_continuous_scale="matter",title='OVERALL USER TRANSACTIONS')
     fig.update_geos(fitbounds="locations",visible=False)
     fig.update_layout(title_font=dict(size=30),title_font_color="#6739b7",title_x=0.25,height=700,
@@ -88,13 +119,13 @@ def plt_overall_map_user():
     geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson"
     response=requests.get(geojson)
     data = response.json()
+    data=ut_mapping(data)
     sta=sorted([feature['properties']['ST_NM'] for feature in data["features"]])
     df_st=pd.DataFrame({"state":sta})
 
     mergedf=df_st.merge(at2,on='state')
 
-    fig=px.choropleth(mergedf,
-                    geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+    fig=px.choropleth(mergedf,geojson=data,
                     featureidkey='properties.ST_NM',locations='state',color='count',color_continuous_scale="oryel",title='OVERALL REGISTERED USERS')
     fig.update_geos(fitbounds="locations",visible=False)
     fig.update_layout(title_font=dict(size=30),title_font_color="#E83A52",title_x=0.25,height=700,
@@ -115,13 +146,13 @@ def plt_map_trans(year,quarter,transaction_type):
     geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson"
     response=requests.get(geojson)
     data = response.json()
+    data=ut_mapping(data)
     sta=sorted([feature['properties']['ST_NM'] for feature in data["features"]])
     df_st=pd.DataFrame({"state":sta})
 
     mergedf=df_st.merge(at2,on='state')
 
-    fig=px.choropleth(mergedf,
-                    geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+    fig=px.choropleth(mergedf,geojson=data,
                     featureidkey='properties.ST_NM',locations='state',color='transaction_count',color_continuous_scale="matter",title=f'{transaction_type.upper()} TYPE TRANSACTIONS')
     fig.update_geos(fitbounds="locations",visible=False)
     fig.update_layout(title_font=dict(size=30),title_font_color="#6739b7",title_x=0.25,height=700,
@@ -142,13 +173,13 @@ def plt_map_user(year,quarter):
     geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson"
     response=requests.get(geojson)
     data = response.json()
+    data=ut_mapping(data)
     sta=sorted([feature['properties']['ST_NM'] for feature in data["features"]])
     df_st=pd.DataFrame({"state":sta})
 
     mergedf=df_st.merge(at2,on='state')
 
-    fig=px.choropleth(mergedf,
-                    geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+    fig=px.choropleth(mergedf,geojson=data,
                     featureidkey='properties.ST_NM',locations='state',color='count',color_continuous_scale="oryel",title='REGISTERD USERS')
     fig.update_geos(fitbounds="locations",visible=False)
     fig.update_layout(title_font=dict(size=30),title_font_color="#E83A52",title_x=0.3,height=700,
